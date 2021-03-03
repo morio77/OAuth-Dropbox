@@ -16,7 +16,7 @@ const tokenEndpointUrl      = 'https://api.dropbox.com/oauth2/token'; // トー�
 const uploadFileEndPointUrl = 'https://content.dropboxapi.com/2/files/upload'; // アップロードエンドポイントのURL
 
 // 認可エンドポイントからのレスポンスを受け取るURL
-const callbackUrl = "http://localhost:3000/callback";
+const encordedCallbackUrl = encodeURIComponent("http://localhost:3000/callback");
 
 let token = "";         // アクセストークン
 let state = "";         // state
@@ -34,7 +34,7 @@ app.get('/authorization', (req, res) => {
     codeVerifier  = base64url.fromBase64(crypto.randomBytes(96).toString("base64"));
     codeChallenge = base64url.fromBase64(crypto.createHash('sha256').update(codeVerifier).digest().toString("base64"));
 
-    const params = `?client_id=${appkey}&redirect_uri=${callbackUrl}&response_type=code&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+    const params = `?client_id=${appkey}&redirect_uri=${encordedCallbackUrl}&response_type=code&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
     res.redirect(authorizEndpointUrl + params);
 });
@@ -52,7 +52,7 @@ app.get('/callback', (req, res) => {
 
     // クライアントに返さず、アプリ側でトークンエンドポイントへPOSTする
     const code = req.query.code; // 認可コード
-    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${callbackUrl}&code_verifier=${codeVerifier}`;
+    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${encordedCallbackUrl}&code_verifier=${codeVerifier}`;
 
     const options = {
         method: 'POST',
