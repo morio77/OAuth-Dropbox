@@ -37,8 +37,9 @@ user -> browser: ID・PWを入力
 browser -> authorizationServer: 認可決定エンドポイントへ
 
     ' 「localhost:3000/callback」でやっていること
-    authorizationServer -> app ++ : **④ 認可エンドポイントからのレスポンス**\n**（認可コード発行）**\n**「localhost:3000/callback」に届く**
-
+    authorizationServer -> browser: リダイレクト応答
+    browser -> app ++ : **④ 認可エンドポイントからのレスポンス（認可コード発行）**\n**「localhost:3000/callback」にリダイレクトされる**
+    
     note over app
     stateの検証
     end note
