@@ -1,0 +1,66 @@
+@startuml
+
+title OAuth2.0でDropboxにファイルをアップロードする流れ
+
+actor user as user
+participant ブラウザ as browser
+participant アプリサーバ as app
+participant Dropbox認可サーバ as authorizationServer
+participant Dropboxリソースサーバ as resourceServer
+
+' ブラウザを介してアプリサーバにアクセスする
+user -> browser:「localhost:3000」にアクセス操作
+
+    ' 「localhost:3000」でやっていること
+    browser -> app ++ : **①「localhost:3000」にアクセス**
+    return トップページを表示
+
+' ユーザが連携ボタンをクリック
+user -> browser: 連携ボタンをクリック
+
+    ' 「localhost:3000/authorization」でやっていること
+    browser -> app ++ :** ②「localhost:3000/authorization」にアクセス**
+
+    note right app
+    ・state生成
+    ・code_verifier生成
+    ・code_challenge生成
+    end note
+
+    return リダイレクト応答
+
+browser -> authorizationServer:** ③ 認可エンドポイントへ(認可)リクエスト**
+return 認可画面を表示
+
+' ユーザが認可画面でID・PWを入力
+user -> browser: ID・PWを入力
+browser -> authorizationServer: 認可決定エンドポイントへ
+
+    ' 「localhost:3000/callback」でやっていること
+    authorizationServer -> app ++ : **④ 認可エンドポイントからのレスポンス**\n**（認可コード発行）**\n**「localhost:3000/callback」に届く**
+
+    note over app
+    stateの検証
+    end note
+
+    app -> authorizationServer:**⑤ トークエンドポイントへリクエスト**
+    authorizationServer -> app: トークンエンドポイントからのレスポンス\n**(アクセストークン発行)**
+
+    note right app
+    ・トークンを保持
+    end note
+
+    app -> browser -- : リダイレクト応答
+
+    ' 「localhost:3000/uploadFilePage」でやっていること
+    browser -> app ++ : **⑥「localhost:3000/uploadFilePage」にアクセス**
+    return アップロード画面を表示
+
+' ユーザがファイルをアップロード(D＆D)
+user -> browser: ファイルドロップ
+
+    ' 「localhost:3000/uploadFile」でやっていること
+    browser -> app ++ :** ⑦「localhost:3000/uploadFile」にファイルデータをPOST**
+    app -> resourceServer -- : トークンを使ってファイルアップロード(WebAPI)
+
+@enduml
