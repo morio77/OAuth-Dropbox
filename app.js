@@ -1,6 +1,17 @@
 const express = require('express');
+const session = require('express-session');
 const app = express();
 app.use(express.static(__dirname));
+app.use(
+    session({
+        secret: "Zzz",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            maxAge: 60 * 60 * 1000 // 1時間
+        }
+    })
+);
 const request = require('request');
 const crypto = require("crypto");
 const base64url = require('base64url')
@@ -18,11 +29,6 @@ const uploadFileEndPointUrl = 'https://content.dropboxapi.com/2/files/upload'; /
 // 認可エンドポイントからのレスポンスを受け取るURL
 const encordedCallbackUrl = encodeURIComponent("http://localhost:3000/callback");
 
-let token = "";         // アクセストークン
-let state = "";         // state
-let codeVerifier = "";  // code_verifier
-let codeChallenge = ""; // code_challenge
-
 // トップページ
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/views/index.html');
@@ -30,9 +36,19 @@ app.get('/', (req, res) => {
 
 // ユーザがが連携ボタンを押した時の処理（認可エンドポイントへリダイレクトする）
 app.get('/authorization', (req, res) => {
+    // すでにセッションにトークンが存在していればアップロード画面を表示する
+    if(req.session.token) {
+        res.sendFile(__dirname + '/views/uploadFile.html');
+        return;
+    }
+
     state         = base64url.fromBase64(crypto.randomBytes(96).toString("base64"));
     codeVerifier  = base64url.fromBase64(crypto.randomBytes(96).toString("base64"));
     codeChallenge = base64url.fromBase64(crypto.createHash('sha256').update(codeVerifier).digest().toString("base64"));
+
+    // セッション管理変数にstateとcodeVerifierを記憶する
+    req.session.state = state;
+    req.session.codeVerifier = codeVerifier;
 
     const params = `?client_id=${appkey}&redirect_uri=${encordedCallbackUrl}&response_type=code&state=${state}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
@@ -44,7 +60,7 @@ app.get('/authorization', (req, res) => {
 app.get('/callback', (req, res) => {
 
     // stateが一致しない場合は、トップページにリダイレクト
-    if (req.query.state !== state) {
+    if (req.query.state !== req.session.state) {
         console.log('state不一致');
         res.redirect('http://localhost:3000/');
         return;
@@ -52,7 +68,7 @@ app.get('/callback', (req, res) => {
 
     // クライアントに返さず、アプリ側でトークンエンドポイントへPOSTする
     const code = req.query.code; // 認可コード
-    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${encordedCallbackUrl}&code_verifier=${codeVerifier}&client_id=${appkey}`;
+    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${encordedCallbackUrl}&code_verifier=${req.session.codeVerifier}&client_id=${appkey}`;
 
     const options = {
         method: 'POST',
@@ -74,6 +90,7 @@ app.get('/callback', (req, res) => {
 
         // トークンが取得できれば、正常なページにリダイレクト
         if (token !== "" && token !== undefined) {
+            req.session.token = token;
             res.redirect('http://localhost:3000/uploadFilePage');
             return;
         }
@@ -110,7 +127,7 @@ app.post('/uploadFile', uploadFile.single('file'), (req, res) => {
         url: uploadFileEndPointUrl,
         headers : {
             'Content-type': 'application/octet-stream',
-            'Authorization': 'Bearer ' + token,
+            'Authorization': 'Bearer ' + req.session.token,
             'Dropbox-API-Arg': encoded_args,
         },
         body: req.file.buffer,
