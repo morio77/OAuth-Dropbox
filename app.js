@@ -10,7 +10,7 @@ const uploadFile = multer();
 
 // ドロップボックスアプリに関する定数
 const appkey                = "Xxx"; // アプリキー
-const appsecret             = "Yyy"; // アプリのシークレットキー
+// const appsecret             = "Yyy"; // アプリのシークレットキー(PKCEで実装するなら不要)
 const authorizEndpointUrl   = 'https://www.dropbox.com/oauth2/authorize'; // 認可エンドポイントのURL
 const tokenEndpointUrl      = 'https://api.dropbox.com/oauth2/token'; // トークンエンドポイントのURL
 const uploadFileEndPointUrl = 'https://content.dropboxapi.com/2/files/upload'; // アップロードエンドポイントのURL
@@ -52,7 +52,7 @@ app.get('/callback', (req, res) => {
 
     // クライアントに返さず、アプリ側でトークンエンドポイントへPOSTする
     const code = req.query.code; // 認可コード
-    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${encordedCallbackUrl}&code_verifier=${codeVerifier}`;
+    const dataString = `grant_type=authorization_code&code=${code}&redirect_uri=${encordedCallbackUrl}&code_verifier=${codeVerifier}&client_id=${appkey}`;
 
     const options = {
         method: 'POST',
@@ -61,10 +61,10 @@ app.get('/callback', (req, res) => {
             "Content-type": "application/x-www-form-urlencoded",
         },
         body: dataString,
-        auth: {
-            user: appkey,
-            password: appsecret,
-        },
+        // auth: { // (PKCEで実装する場合は不要)
+        //     user: appkey,
+        //     password: appsecret,
+        // },
     }
 
     // トークンエンドポイントへリクエスト
