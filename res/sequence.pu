@@ -22,9 +22,10 @@ user -> browser: 連携ボタンをクリック
     browser -> app ++ :** ②「localhost:3000/authorization」にアクセス**
 
     note right app
-    ・state生成
-    ・code_verifier生成
-    ・code_challenge生成
+    以下を生成して、セッション変数に格納しておく
+    ・state
+    ・code_verifier
+    ・code_challenge
     end note
 
     return リダイレクト応答
@@ -42,13 +43,15 @@ browser -> authorizationServer: 認可決定エンドポイントへ
     
     note over app
     stateの検証
+    セッション変数のstateと
+    レスポンスに含まれるstateが一致するか検証
     end note
 
     app -> authorizationServer:**⑤ トークエンドポイントへリクエスト**
     authorizationServer -> app: トークンエンドポイントからのレスポンス\n**(アクセストークン発行)**
 
     note right app
-    ・トークンを保持
+    ・セッション変数にトークンを保持
     end note
 
     app -> browser -- : リダイレクト応答
