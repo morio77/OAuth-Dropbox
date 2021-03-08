@@ -25,7 +25,6 @@ user -> browser: 連携ボタンをクリック
     以下を生成して、セッション変数に格納しておく
     ・state
     ・code_verifier
-    ・code_challenge
     end note
 
     return リダイレクト応答
